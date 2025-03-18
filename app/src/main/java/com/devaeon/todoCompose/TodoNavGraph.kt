@@ -15,6 +15,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.devaeon.todoCompose.TodoDestinationsArgs.USER_MESSAGE_ARG
+import com.devaeon.todoCompose.statistics.StatisticsScreen
 import com.devaeon.todoCompose.tasks.TasksScreen
 import com.devaeon.todoCompose.utils.AppModalDrawer
 import kotlinx.coroutines.CoroutineScope
@@ -25,38 +27,44 @@ fun TodoNavGraph(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
-    drawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
+    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
     startDestination: String = TodoDestinations.TASKS_ROUTE,
-    navAction: TodoNavigationActions = remember(navController) { TodoNavigationActions(navController) }
+    navActions: TodoNavigationActions = remember(navController) { TodoNavigationActions(navController) }
 ) {
-
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navController.currentBackStackEntry?.destination?.route ?: startDestination
+    val currentRoute = currentNavBackStackEntry?.destination?.route ?: startDestination
 
     NavHost(
-        navController,
-        modifier = modifier,
-        startDestination = startDestination
+        navController = navController,
+        startDestination = startDestination,
+        modifier = modifier
     ) {
         composable(
             route = TodoDestinations.TASKS_ROUTE,
             arguments = listOf(
-                navArgument(TodoDestinationsArgs.USER_MESSAGE_ARG) {
+                navArgument(USER_MESSAGE_ARG) {
                     type = NavType.IntType; defaultValue = 0
                 }
             )
         ) { entry ->
+            AppModalDrawer(drawerState, currentRoute, navActions) {
+                TasksScreen(
+                    userMessage = entry.arguments?.getInt(USER_MESSAGE_ARG)!!,
+                    openDrawer = { coroutineScope.launch { drawerState.open() } })
+            }
+        }
+
+        composable(
+            route = TodoDestinations.STATISTICS_ROUTE,
+        ) {
             AppModalDrawer(
                 drawerState = drawerState,
                 currentRoute = currentRoute,
-                navigationActions = navAction
+                navigationActions = navActions
             ) {
-                TasksScreen(
-                    openDrawer = { coroutineScope.launch { drawerState.open() } }
-                )
+                StatisticsScreen(
+                    openDrawer = { coroutineScope.launch { drawerState.open() } })
             }
         }
     }
-
-
 }

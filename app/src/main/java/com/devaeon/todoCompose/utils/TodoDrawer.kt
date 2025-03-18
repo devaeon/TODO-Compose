@@ -48,14 +48,14 @@ fun AppModalDrawer(
         drawerState = drawerState,
         drawerContent = {
             AppDrawer(
-                currentRoute,
-                navigateToTasks = { navigationActions.navigateToTask() },
+                currentRoute = currentRoute,
+                navigateToTasks = { navigationActions.navigateToTasks() },
                 navigateToStatistics = { navigationActions.navigateToStatistics() },
-                closeDrawer = {coroutineScope.launch { drawerState.close() }}
+                closeDrawer = { coroutineScope.launch { drawerState.close() } }
             )
         }
     ) {
-        content.invoke()
+        content()
     }
 }
 
@@ -143,7 +143,7 @@ private fun DrawerButton(
         ) {
             Icon(
                 painter = painter,
-                contentDescription = null,
+                contentDescription = null, // decorative
                 tint = tintColor
             )
             Spacer(Modifier.width(16.dp))
@@ -156,10 +156,9 @@ private fun DrawerButton(
     }
 }
 
-
-@Preview()
+@Preview("Drawer contents")
 @Composable
-private fun DrawerPreview() {
+fun PreviewAppDrawer() {
     TodoTheme {
         Surface {
             AppDrawer(

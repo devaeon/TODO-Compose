@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.devaeon.todoCompose.utils
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -17,24 +20,43 @@ import com.devaeon.todoCompose.R
 import com.devaeon.todoCompose.ui.theme.TodoTheme
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskTopAppBar(
     openDrawer: () -> Unit
 ) {
+    CustomTopAppBar(
+        title = stringResource(id = R.string.list_title),
+        openDrawer = openDrawer,
+        actions = {
+           /* TODO: Implement action later */
+        }
+    )
+}
 
+@Composable
+fun StatisticsTopAppBar(openDrawer: () -> Unit) {
+    CustomTopAppBar(
+        title = stringResource(id = R.string.statistics_title),
+        openDrawer = openDrawer
+    )
+}
+
+@Composable
+fun CustomTopAppBar(
+    title: String,
+    openDrawer: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: @Composable (RowScope.() -> Unit) = {},
+) {
     TopAppBar(
-        title = { Text(stringResource(R.string.app_name)) },
+        title = { Text(text = title) },
         navigationIcon = {
             IconButton(onClick = openDrawer) {
                 Icon(Icons.Filled.Menu, stringResource(id = R.string.open_drawer))
             }
         },
-        actions = {
-            //TODO: Add other menu item actions here in future...
-        },
-        modifier = Modifier.fillMaxWidth()
-
+        actions = actions,
+        modifier = modifier.fillMaxWidth()
     )
 }
 
@@ -45,6 +67,16 @@ private fun TaskTopAppBarPreview() {
     TodoTheme {
         Surface {
             TaskTopAppBar(openDrawer = {})
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun StatisticsTopAppBarPreview() {
+    TodoTheme {
+        Surface {
+            StatisticsTopAppBar(openDrawer = {})
         }
     }
 }
