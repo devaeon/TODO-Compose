@@ -1,6 +1,5 @@
 package com.devaeon.todoCompose.tasks
 
-import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
@@ -14,12 +13,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -28,28 +37,75 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devaeon.todoCompose.R
 import com.devaeon.todoCompose.data.Task
+import com.devaeon.todoCompose.ui.theme.TodoTheme
 import com.devaeon.todoCompose.utils.LoadingContent
-import com.devaeon.todoCompose.utils.TaskTopAppBar
-
-private const val TAG = "TasksScreenInformation"
+import com.devaeon.todoCompose.utils.TasksTopAppBar
 
 @Composable
 fun TasksScreen(
     @StringRes userMessage: Int,
+    onAddTask: () -> Unit,
+    onTaskClick: (Task) -> Unit,
+    onUserMessageDisplayed: () -> Unit,
     openDrawer: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: TasksViewModel = hiltViewModel(),
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TaskTopAppBar(openDrawer = openDrawer)
+            TasksTopAppBar(
+                openDrawer = openDrawer,
+                onFilterAllTasks = { viewModel.setFiltering(TasksFilterType.ALL_TASKS) },
+                onFilterActiveTasks = { viewModel.setFiltering(TasksFilterType.ACTIVE_TASKS) },
+                onFilterCompletedTasks = { viewModel.setFiltering(TasksFilterType.COMPLETED_TASKS) },
+                onClearCompletedTasks = { viewModel.clearCompletedTasks() },
+                onRefresh = { viewModel.refresh() }
+            )
+        },
+        floatingActionButton = {
+            SmallFloatingActionButton(onClick = onAddTask) {
+                Icon(Icons.Filled.Add, stringResource(id = R.string.add_task))
+            }
         }
-    ) { contentPadding ->
-        Log.i(TAG, "TasksScreen: contentPadding $contentPadding")
-        Log.i(TAG, "TasksScreen: userMessage: $userMessage")
+    ) { paddingValues ->
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+        TasksContent(
+            loading = uiState.isLoading,
+            tasks = uiState.items,
+            currentFilteringLabel = uiState.filteringUiInfo.currentFilteringLabel,
+            noTasksLabel = uiState.filteringUiInfo.noTasksLabel,
+            noTasksIconRes = uiState.filteringUiInfo.noTaskIconRes,
+            onRefresh = viewModel::refresh,
+            onTaskClick = onTaskClick,
+            onTaskCheckedChange = viewModel::completeTask,
+            modifier = Modifier.padding(paddingValues)
+        )
+
+        // Check for user messages to display on the screen
+        uiState.userMessage?.let { message ->
+            val snackbarText = stringResource(message)
+            LaunchedEffect(snackbarHostState, viewModel, message, snackbarText) {
+                snackbarHostState.showSnackbar(snackbarText)
+                viewModel.snackbarMessageShown()
+            }
+        }
+
+        // Check if there's a userMessage to show to the user
+        val currentOnUserMessageDisplayed by rememberUpdatedState(onUserMessageDisplayed)
+        LaunchedEffect(userMessage) {
+            if (userMessage != 0) {
+                viewModel.showEditResultMessage(userMessage)
+                currentOnUserMessageDisplayed()
+            }
+        }
     }
 }
 
@@ -68,13 +124,7 @@ private fun TasksContent(
     LoadingContent(
         loading = loading,
         empty = tasks.isEmpty() && !loading,
-        emptyContent = {
-            TasksEmptyContent(
-                noTasksLabel,
-                noTasksIconRes,
-                modifier
-            )
-        },
+        emptyContent = { TasksEmptyContent(noTasksLabel, noTasksIconRes, modifier) },
         onRefresh = onRefresh
     ) {
         Column(
@@ -92,7 +142,7 @@ private fun TasksContent(
             )
             LazyColumn {
                 items(tasks) { task ->
-                   TaskItem(
+                    TaskItem(
                         task = task,
                         onTaskClick = onTaskClick,
                         onCheckedChange = { onTaskCheckedChange(task, it) }
@@ -158,7 +208,6 @@ private fun TasksEmptyContent(
     }
 }
 
-
 @Preview
 @Composable
 private fun TasksContentPreview() {
@@ -209,12 +258,36 @@ private fun TasksContentPreview() {
     }
 }
 
-@Preview()
+@Preview
 @Composable
-private fun TaskScreenPreview() {
-    TasksScreen(
-        userMessage = 0,
-        openDrawer = {})
+private fun TasksContentEmptyPreview() {
+    MaterialTheme {
+        Surface {
+            TasksContent(
+                loading = false,
+                tasks = emptyList(),
+                currentFilteringLabel = R.string.label_all,
+                noTasksLabel = R.string.no_tasks_all,
+                noTasksIconRes = R.drawable.logo_no_fill,
+                onRefresh = { },
+                onTaskClick = { },
+                onTaskCheckedChange = { _, _ -> },
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun TasksEmptyContentPreview() {
+    TodoTheme {
+        Surface {
+            TasksEmptyContent(
+                noTasksLabel = R.string.no_tasks_all,
+                noTasksIconRes = R.drawable.logo_no_fill
+            )
+        }
+    }
 }
 
 @Preview

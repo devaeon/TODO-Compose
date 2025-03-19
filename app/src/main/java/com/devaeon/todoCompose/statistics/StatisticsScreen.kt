@@ -12,22 +12,24 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devaeon.todoCompose.R
 import com.devaeon.todoCompose.ui.theme.TodoTheme
 import com.devaeon.todoCompose.utils.LoadingContent
 import com.devaeon.todoCompose.utils.StatisticsTopAppBar
 
-
 @Composable
 fun StatisticsScreen(
     openDrawer: () -> Unit,
     modifier: Modifier = Modifier,
-//    viewModel: StatisticsViewModel = hiltViewModel(),
+    viewModel: StatisticsViewModel = hiltViewModel(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
@@ -35,14 +37,14 @@ fun StatisticsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { StatisticsTopAppBar(openDrawer) },
     ) { paddingValues ->
-       // val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
         StatisticsContent(
-            loading = false,
-            empty = false,
-            activeTasksPercent = 50.0F,
-            completedTasksPercent = 50.0F,
-            onRefresh = {  },
+            loading = uiState.isLoading,
+            empty = uiState.isEmpty,
+            activeTasksPercent = uiState.activeTasksPercent,
+            completedTasksPercent = uiState.completedTasksPercent,
+            onRefresh = { viewModel.refresh() },
             modifier = modifier.padding(paddingValues)
         )
     }
@@ -59,7 +61,7 @@ private fun StatisticsContent(
 ) {
     val commonModifier = modifier
         .fillMaxSize()
-        .padding(horizontal = dimensionResource(id = R.dimen.horizontal_margin))
+        .padding(all = dimensionResource(id = R.dimen.horizontal_margin))
 
     LoadingContent(
         loading = loading,
@@ -80,7 +82,6 @@ private fun StatisticsContent(
         ) {
             if (!loading) {
                 Text(stringResource(id = R.string.statistics_active_tasks, activeTasksPercent))
-                Spacer(modifier = Modifier.padding(dimensionResource(R.dimen.list_item_padding)))
                 Text(
                     stringResource(
                         id = R.string.statistics_completed_tasks,
@@ -94,27 +95,22 @@ private fun StatisticsContent(
 
 @Preview
 @Composable
-private fun StatisticsContentPreview() {
-    TodoTheme {
-        Surface {
-            StatisticsContent(
-                loading = false,
-                empty = false,
-                activeTasksPercent = 40.0F,
-                completedTasksPercent = 60.0f,
-                onRefresh = {}
-            )
-        }
+fun StatisticsContentPreview() {
+    Surface {
+        StatisticsContent(
+            loading = false,
+            empty = false,
+            activeTasksPercent = 80f,
+            completedTasksPercent = 20f,
+            onRefresh = { }
+        )
     }
 }
 
 @Preview
 @Composable
-private fun StatisticsScreenPreview() {
-    TodoTheme {
-        Surface {
-            StatisticsScreen({})
-        }
+fun StatisticsContentEmptyPreview() {
+    Surface {
+        StatisticsScreen({})
     }
 }
-

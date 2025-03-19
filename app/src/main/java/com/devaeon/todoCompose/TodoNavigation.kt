@@ -67,4 +67,8 @@ class TodoNavigationActions(private val navController: NavHostController) {
             restoreState = true
         }
     }
+
+    fun navigateToTaskDetail(taskId: String) {}
+
+    fun navigateToAddEditTask(title: Int, taskId: String?) {}
 }

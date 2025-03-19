@@ -1,5 +1,6 @@
 package com.devaeon.todoCompose
 
+import android.app.Activity
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
@@ -50,7 +51,11 @@ fun TodoNavGraph(
             AppModalDrawer(drawerState, currentRoute, navActions) {
                 TasksScreen(
                     userMessage = entry.arguments?.getInt(USER_MESSAGE_ARG)!!,
-                    openDrawer = { coroutineScope.launch { drawerState.open() } })
+                    onUserMessageDisplayed = { entry.arguments?.putInt(USER_MESSAGE_ARG, 0) },
+                    onAddTask = { navActions.navigateToAddEditTask(R.string.add_task, null) },
+                    onTaskClick = { task -> navActions.navigateToTaskDetail(task.id) },
+                    openDrawer = { coroutineScope.launch { drawerState.open() } }
+                )
             }
         }
 
@@ -68,3 +73,7 @@ fun TodoNavGraph(
         }
     }
 }
+// Keys for navigation
+const val ADD_EDIT_RESULT_OK = Activity.RESULT_FIRST_USER + 1
+const val DELETE_RESULT_OK = Activity.RESULT_FIRST_USER + 2
+const val EDIT_RESULT_OK = Activity.RESULT_FIRST_USER + 3

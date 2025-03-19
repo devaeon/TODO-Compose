@@ -142,7 +142,7 @@ class DefaultTaskRepository @Inject constructor(
     override suspend fun refresh() {
         withContext(dispatcher) {
             val remoteTasks = networkDataSource.loadTasks()
-            localDataSource.deleteAll()
+           // localDataSource.deleteAll()
             localDataSource.upsertAll(remoteTasks.toLocal())
         }
     }
